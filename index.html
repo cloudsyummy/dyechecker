@@ -1,0 +1,261 @@
+<!DOCTYPE HTML>
+
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial scale=1">
+
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+    <!-- got to put jquery -->
+    <script type="text/javascript">
+        //key: @UI refers to UI function.
+
+        var accountdyesurl = "https://api.guildwars2.com/v2/account/dyes";
+
+        var colorinfourl = "https://api.guildwars2.com/v2/colors";
+
+
+
+
+
+        var color_names = [];
+        var color_ids = [];
+
+
+        //first ajax call, gets list & fills the 'Dyes:' text box with options.
+        $.ajax({
+                type: 'GET',
+                url: colorinfourl
+            })
+            .done(function(data) {
+                console.log("get list of all colors");
+                var list = JSON.stringify(data);
+                list = list.slice(1, list.length - 1);
+                //console.log(list);
+                loadColors(list);
+                
+
+            })
+            .fail(function(data) {
+                ajaxcolorurlfail();
+
+                //@TEST
+                testfuncsetup();
+            });
+
+        //@TEST for testing code even if API is not working
+
+
+        //ERROR CALLED BY FIRST AJAX
+        function ajaxcolorurlfail() {
+            $("#answer").text("GW2 API is unavailable right now :(");
+        }
+
+
+        function testfuncsetup() {
+            //fills color names & ids for testing, creates autocomplete for testing.
+
+            color_names = ["dye remover", "blue", "bilbo", "celestial", "black", "shadow of darkness", "sparkles", "humiliation"];
+            color_ids = [1, 2, 4, 5, 6, 7, 8, 9, 11];
+            createAutocomplete();
+        }
+
+
+        //ERROR called by getJSONauth
+        function apikeyerror() {
+            $("#answer").text("Something went wrong checking your friend's dye. Bunny is sad.  Is the API key correct? Make sure you don't have any extra spaces!");
+        }
+
+        //the list is limited to 200 ids at once :<
+
+        //until keep calling ajax until 
+        //colors is a string
+        //calls AJAX
+        function loadColors(colors) {
+            var _colors = colors.slice(0, 200);
+            var _rest = colors.slice(200);
+          //  console.log(_colors);
+        //    console.log(_rest);
+
+            if (colors.length == 0) {
+                console.log("nothing left");
+                createAutocomplete();
+            } else {
+                $.ajax({
+                        type: "GET",
+                        url: colorinfourl,
+                        data: {
+                            "ids": _colors
+                        }
+                    })
+                    .done(function(data) {
+
+                        console.log("load colors success");
+                        fillcolorarrays(data);
+                        loadColors(_rest);
+
+                    })
+                    .fail(function(data) {
+
+                        console.log("load colors failed");
+
+                    });
+            }
+        }
+
+
+        //fills color_names & color_ids
+        //called by AJAX
+        function fillcolorarrays(data) {
+            for (var i = 0; i < data.length; i++) {
+                color_names.push(data[i]["name"]);
+
+                color_ids.push(data[i]["id"]);
+            }
+
+
+        }
+
+        //@UI ONlY
+        function createAutocomplete() {
+
+           // console.log("bwelrhwer");
+            $("#dyes").autocomplete({
+                source: color_names
+            });
+         //   console.log(color_names);
+
+            $("#dyes").css("display:block");
+          //  console.log("bleh");
+
+
+        }
+
+
+        //--- BUTTON PRESS CHECK----
+
+
+        //@UI called on button press 'CHECK'
+        function check() {
+
+            //console.log("bleh");
+            //take text from dye and from API key.
+            var apikey = $("#apikey").val();
+            console.log("apikey is " + apikey);
+            console.log($("#apikey").val());
+
+
+            //saves the dye to search for in variable 'dye'
+            var dye = $("#dyes").val();
+            console.log($("#dyes").val());
+            console.log("dye is" + dye);
+
+
+
+            //finds out what dyes your friend has.
+
+            //untested funtimes!!
+            checkdye(dye, apikey);
+        }
+
+
+
+        //check the dye against the dyes your friend has.
+        //@UNTESTED
+        //dye is a string, btw
+        function checkdye(dye, apikey) {
+            var index = color_names.indexOf(dye);
+            var id = color_ids[index];
+            getFriendDyes(id, apikey);
+
+        }
+
+
+        //@UNTESTED
+        function getFriendDyes(dyeid, apikey) {
+            $.ajax({
+                    type: "GET",
+                    url: accountdyesurl,
+                    data: {
+                        "access_token": apikey
+                    }
+                })
+                .done(function(data) {
+                    console.log(data);
+                    //load colors into the variable colors.  then load the items
+                    checkdyeid(dyeid, data);
+
+                })
+                .fail(function(data) {
+                    apikeyerror();
+                });
+
+        }
+
+
+        //@UNTESTED
+        function checkdyeid(id, data) {
+
+
+            if ($.inArray(id, data) == -1) {
+                //update answer
+                $("#answer").text("They don't have that dye!");
+                var dye = "bleh";
+                $("#log").append();
+
+            } else {
+                $("#answer").text("They have that dye already.");
+            }
+
+
+        }
+
+        function findthatdye(friend_dye_set) {
+            //search for variable dye inside friend dye set.
+
+
+            //show 'They have that dye already!'
+            //or 'They don't seem to have that dye. :)'
+        }
+
+    </script>
+    
+    <style>
+        li {
+            background-color:white;
+            list-style:none;
+        }
+    </style>
+
+
+</head>
+
+<body>
+    <p>Daremai's Dye Checker! For giving dyes to your offline friends x). Only problem is it won't work if uh, um, they are like, forever offline and you send them the same dye twice and they don't open it. </p>
+    <p>Find the dye in the first text box, and put the apikey of your friend on the second textbox. Dye will check whether they have it or not!</p>
+
+
+    <!--This would be an options combo box-->
+    <span class="ui-widget">
+        <label for="dyes">Dye: </label>
+        <input id="dyes">
+    </span>    API Key: <input type="text" id="apikey" name="Their api key!" value="">
+    <input type="button" id="check" value="check!" onclick="check()">
+    <br>
+    <br>
+    <br>
+    <p id="answer"></p>
+
+<!--
+    <p>Dyes you've checked so far are: </p>
+    <div id="log"></div>
+-->
+
+    <input type="button" id="clear" value="clear" onclick="clear()">
+
+</body>
+
+</html>
