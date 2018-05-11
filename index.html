@@ -5,14 +5,28 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial scale=1">
+    <title>Guild Wars 2 Dyechecker</title>
 
+    
+    <!-- got to put jquery -->
     <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
 
-    <!-- got to put jquery -->
     <script type="text/javascript">
+        
+        
+        
+        //1. Has to also mention the name of the account of the api person so that I don't get mixed up between keys.
+        //2. Make searchable.  (maybe i should do this first)
+        //3. Possibly use the same instructions for getting API key from the other
+        //4. can copy multiple API keys, toss it into the string and add a comma, or something.  
+        //5. remove the "part where the shows the dropdown box?" csss problem.
+        //6. clean up css
+        
+        
         //key: @UI refers to UI function.
 
+        var accounturl = "https://api.guildwars2.com/v2/account"; 
         var accountdyesurl = "https://api.guildwars2.com/v2/account/dyes";
 
         var colorinfourl = "https://api.guildwars2.com/v2/colors";
@@ -21,6 +35,7 @@
 
 
 
+        var name = "";
         var color_names = [];
         var color_ids = [];
 
@@ -40,7 +55,7 @@
 
             })
             .fail(function(data) {
-                ajaxcolorurlfail();
+                ajaxcolorurlfail(); 
 
                 //@TEST
                 testfuncsetup();
@@ -81,7 +96,7 @@
         //    console.log(_rest);
 
             if (colors.length == 0) {
-                console.log("nothing left");
+                //console.log("nothing left");
                 createAutocomplete();
             } else {
                 $.ajax({
@@ -93,13 +108,14 @@
                     })
                     .done(function(data) {
 
-                        console.log("load colors success");
+                      //  console.log("load colors success");
                         fillcolorarrays(data);
                         loadColors(_rest);
 
                     })
                     .fail(function(data) {
 
+                    //@TODO show end user message
                         console.log("load colors failed");
 
                     });
@@ -153,29 +169,32 @@
             console.log($("#dyes").val());
             console.log("dye is" + dye);
 
-
+            
+            
 
             //finds out what dyes your friend has.
 
-            //untested funtimes!!
             checkdye(dye, apikey);
         }
 
 
 
         //check the dye against the dyes your friend has.
-        //@UNTESTED
         //dye is a string, btw
         function checkdye(dye, apikey) {
             var index = color_names.indexOf(dye);
             var id = color_ids[index];
-            getFriendDyes(id, apikey);
+            var friendname = getFriendName(apikey);
+            console.log(friendname);
+            getFriendDyes(id, apikey, friendname);
+            //I passed the friendname as parameter but the getFriendNAme executes after getFriendDyes, usually.  Can update in next iteration.
+
 
         }
 
 
-        //@UNTESTED
         function getFriendDyes(dyeid, apikey) {
+            
             $.ajax({
                     type: "GET",
                     url: accountdyesurl,
@@ -194,31 +213,46 @@
                 });
 
         }
+        
+        
+        //@TODO right now friend username appears at different time of api key.  the key is to have the friend name and dye loaded into variables perhaps and then 
+        //use this: https://css-tricks.com/multiple-simultaneous-ajax-requests-one-callback-jquery/
+        //alterntaively could i get the from differnet url probably not.
+        // so use $.when() .then().
 
-
-        //@UNTESTED
-        function checkdyeid(id, data) {
-
-
-            if ($.inArray(id, data) == -1) {
+        
+        function getFriendName(apikey) {
+            $.ajax({
+                type: "GET",
+                url: accounturl,
+                data: {
+                    "access_token": apikey
+                }
+            })
+            .done( function(data){
+                $("#answer").text(data["name"] + $("#answer").text());
+                console.log("inside get friend name call  "  +  data["name"]);
+                return data["name"];
+            })
+            .fail(function(data){
+                apikeyerror();
+            });
+        }
+        function checkdyeid(id, data, thename) {
+            
+            
+            
+            if ($.inArray(id, data,name) == -1) {
                 //update answer
-                $("#answer").text("They don't have that dye!");
+                $("#answer").text(name + " doesn't have that dye!");
                 var dye = "bleh";
                 $("#log").append();
 
             } else {
-                $("#answer").text("They have that dye already.");
+                $("#answer").text(name + " has that dye already.");
             }
 
 
-        }
-
-        function findthatdye(friend_dye_set) {
-            //search for variable dye inside friend dye set.
-
-
-            //show 'They have that dye already!'
-            //or 'They don't seem to have that dye. :)'
         }
 
     </script>
